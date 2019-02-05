@@ -1,6 +1,6 @@
-#Software
+# Software
 
-#Jack 
+# Jack 
 Install the JACK audio connection kit.
 ```
 sudo apt-get install jack
