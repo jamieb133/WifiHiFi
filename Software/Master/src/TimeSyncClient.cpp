@@ -26,9 +26,10 @@ void TimeSyncClient::GenerateDelayRequest()
 {
     QByteArray DelayPacket;
     DelayPacket.append(TIMESYNC_PREAMBLE);
-    DelayPacket.append(DELAY_RESP);
+    DelayPacket.append(DELAY_REQ);
     DelayPacket.append(m_timestamp);
     socket->writeDatagram(DelayPacket, QHostAddress(TIMESYNC_MCAST), 1234);
+    qDebug() << "SENT DELAY REQUEST" << endl;
 }
 
 void TimeSyncClient::UDPCallback()

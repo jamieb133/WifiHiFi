@@ -12,10 +12,10 @@ int main(int argc, char **argv)
     //cout << "hello" << endl;
     QCoreApplication app(argc, argv);
 
-    //TimeSyncServer server;
-    TimeSyncClient client;
+    TimeSyncServer server;
+    //TimeSyncClient client;
 
-    //server.StartNetworkSync();
+    server.start();
 
     return app.exec();
 }

@@ -2,7 +2,8 @@
 #include "config.h"
 #include "types.h"
 
-TimeSyncServer::TimeSyncServer(QObject* parent) : QObject(parent)
+
+TimeSyncServer::TimeSyncServer()
 {
     //clockType = clockTypeReq;
     socket = new QUdpSocket(this);
@@ -12,13 +13,19 @@ TimeSyncServer::TimeSyncServer(QObject* parent) : QObject(parent)
     connect(socket, SIGNAL(readyRead()), this, SLOT(UDPCallback()));
 
     m_timestamp = 0;
+
+
+
+
 }
 
-void TimeSyncServer::StartNetworkSync()
+void TimeSyncServer::run()
 {
     m_timer = new QTimer;
-    connect(m_timer, SIGNAL(timeout()), this, SLOT(SendSyncRequest()), Qt::DirectConnection);
+    connect(m_timer, SIGNAL(timeout()), this, SLOT(GenerateSyncRequest()), Qt::DirectConnection);
     m_timer->start(1000);
+
+    exec();
 }
 
 void TimeSyncServer::GenerateSyncRequest()
@@ -49,7 +56,7 @@ void TimeSyncServer::GenerateDelayResponse()
     DelayRespPacket.append(m_timestamp); 
 
     /* send */
-    socket->writeDatagram(DelayRespPacket, QHostAddress(TIMESYNC_MCAST), 1234);
+    socket->writeDatagram(DelayRespPacket, QHostAddress("192.168.0.10"), 1234);
     qDebug() << "SENT DELAY-RESPONSE" <<endl;
 
 }
@@ -75,12 +82,12 @@ void TimeSyncServer::UDPCallback()
     {
         switch (msgType)
         {
-            case SYNC :         qDebug() << "Received sync message but running as master" << endl;
+            case SYNC :         //qDebug() << "Received sync message but running as master" << endl;
                                 break;
             case DELAY_REQ:     qDebug() << "Received delay-request, will process" << endl;
                                 GenerateDelayResponse();
                                 break;
-            case DELAY_RESP:    qDebug() << "Received delay-response, but running as master" << endl;
+            case DELAY_RESP:    //qDebug() << "Received delay-response, but running as master" << endl;
                                 break;
             default:            qDebug() << "ERROR: unrecognised time-sync message type" << endl;
                                 break;
