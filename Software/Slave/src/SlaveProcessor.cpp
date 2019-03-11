@@ -13,24 +13,7 @@
 
 #include "SlaveProcessor.h"
 
-
-#define BIGBUFFSIZE 8192
-#define BUFFSIZE 2048
-
 using namespace std;
-
-const double exampleLowpassImpulse[] = {
-	-0.00105964, -0.0011159 , -0.00122684, -0.00136109, -0.00146365,
-	-0.00145803, -0.00125073, -0.00073776,  0.00018711,  0.00162305,
-        0.00365256,  0.0063323 ,  0.00968525,  0.01369476,  0.01830123,
-        0.02340178,  0.02885309,  0.03447726,  0.04007059,  0.04541448,
-        0.05028793,  0.05448067,  0.05780599,  0.0601124 ,  0.06129316,
-        0.06129316,  0.0601124 ,  0.05780599,  0.05448067,  0.05028793,
-        0.04541448,  0.04007059,  0.03447726,  0.02885309,  0.02340178,
-        0.01830123,  0.01369476,  0.00968525,  0.0063323 ,  0.00365256,
-        0.00162305,  0.00018711, -0.00073776, -0.00125073, -0.00145803,
-	-0.00146365, -0.00136109, -0.00122684, -0.0011159 , -0.00105964
-};
 
 SlaveProcessor::SlaveProcessor(QtJack::Client& client) : Processor(client)
 {
@@ -52,6 +35,9 @@ SlaveProcessor::SlaveProcessor(QtJack::Client& client) : Processor(client)
     ringBuffer = QtJack::AudioRingBuffer(BUFFSIZE);
     startupFlag = true;
 
+    m_dac = new AlsaController(client);
+    m_alsaBuffer = new int64_t[client.bufferSize()];
+
 }
 
 void SlaveProcessor::process(int samples)
@@ -63,12 +49,20 @@ void SlaveProcessor::process(int samples)
         inputSample = in.buffer(samples).read(pos, &readOkay);
 
         currentSample = firWoof->filter(inputSample);
-        wooferOut.buffer(samples).write(pos, currentSample);
+        //wooferOut.buffer(samples).write(pos, currentSample);
 
-        currentSample = firTweet->filter(inputSample);
-        tweeterOut.buffer(samples).write(pos, currentSample);
+        //currentSample = firTweet->filter(inputSample);
+        //tweeterOut.buffer(samples).write(pos, currentSample);
+
+        /* copy current sample to local ALSA buffer */
+        /* TODO: move this to seperate thread that reads from big ring buffer */
+        currentSample = static_cast<int64_t>(inputSample*0x10000000);
+        //currentSample = currentSample << 32;
+
+        m_alsaBuffer[pos] = currentSample;
 
     }
-    
+    /* output through alsa */
+    m_dac->WriteInterleaved(m_alsaBuffer)
 
 }

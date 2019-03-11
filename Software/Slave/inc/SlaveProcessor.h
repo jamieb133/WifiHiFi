@@ -2,6 +2,7 @@
 #define SLAVEPROCESSOR_H
 
 #include "CrossoverFilter.h"
+#include "AlsaController.h"
 
 #include <Client>
 #include <Processor>
@@ -21,9 +22,9 @@ private:
 
     bool readOkay;
     int buffNum;
-    float* m_shiftBuffer;
-    float* m_bigBuff;
-    bool startupFlag;
+    int64_t* m_alsaBuffer;
+    AlsaController* m_dac;
+
     QtJack::AudioPort in;
     QtJack::AudioPort tweeterOut;
     QtJack::AudioPort wooferOut;
