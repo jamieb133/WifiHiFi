@@ -19,15 +19,19 @@ public slots:
     void UDPCallback();
 
 private:
-    void ProcessSyncRequest(int RxTimestamp);
+    void ProcessSyncRequest(quint32 RxSecs, quint32 RxNSecs);
     void GenerateDelayRequest();
-    void ProcessDelayResponse();
-    void ReadTime(int *ts);
+    void ProcessDelayResponse(quint32 RxSecs, quint32 RxNSecs);
+    quint32 UnpackTimestamp(QByteArray packet, int size);
 
     int m_timestamp;
     int m_timeoffset;
     QTimer* m_timer;
     QUdpSocket* socket;
+    quint32 RxSecs;
+    quint32 RxNSecs;
+
+    
 };
 
 #endif //TIMESYNCCLIENT_H

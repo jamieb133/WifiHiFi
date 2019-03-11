@@ -2,17 +2,19 @@
 #define TIMESYNCSERVER_H
 
 #include <QObject>
+#include <QThread>
 #include <QUdpSocket>
 #include <QtCore>
 #include "types.h"
+#include <time.h>
 
-class TimeSyncServer : public QObject
+class TimeSyncServer : public QThread
 {
     Q_OBJECT
 
 public:
-    explicit TimeSyncServer(QObject* parent = 0);
-    void StartNetworkSync();
+    explicit TimeSyncServer();
+    //void StartNetworkSync();
     
 signals:
     
@@ -21,10 +23,11 @@ public slots:
     void GenerateSyncRequest();
 
 private:
+    void run();
     void GenerateDelayResponse();
-    void ReadTime(int *ts);
+    void PackTimestamp(struct timespec* ts, QByteArray* packet);
 
-    int m_timestamp;
+    struct timespec m_timestamp;
     QTimer* m_timer;
     QUdpSocket* socket;
     QHostAddress* destIP;
