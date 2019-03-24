@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
     client.connectToServer("WiSpeak");
 
     SlaveProcessor processor(client);
+    client.setMainProcessor(&processor);
     client.activate();
 
     return a.exec();

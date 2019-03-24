@@ -27,6 +27,7 @@
 
 // Standard includes
 #include <cstdlib>
+#include <iostream>
 
 // Qt includes
 #include <QStringList>
@@ -376,9 +377,17 @@ void Client::threadInit() {
 }
 
 void Client::process(int samples) {
+    //std::cout << "callback hello" << std::endl;
     if(_processor) {
         _processor->process(samples);
     }
+    /*
+    else
+    {
+        std::cout << "no processor" << std::endl;
+    }
+    */
+    
 }
 
 void Client::freewheel(int starting) {
@@ -462,10 +471,18 @@ void Client::infoShutdown(jack_status_t code, const char *reason) {
 
 int Client::processCallback(jack_nframes_t sampleCount,
                             void *argument) {
+    //std::cout << "callback" << std::endl;
     Client *jackClient = static_cast<Client*>(argument);
     if(jackClient) {
         jackClient->process(sampleCount);
     }
+    /*
+    else
+    {
+        std::cout << "no client" << std::endl;
+    }
+    */
+    
     return 0;
 }
 

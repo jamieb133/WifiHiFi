@@ -11,7 +11,7 @@
 #ifndef ALSACONTROLLER_H 
 #define ALSACONTROLLER_H
 
-#include <client.h>
+#include <Client>
 #include <alsa/asoundlib.h>
 
 /**

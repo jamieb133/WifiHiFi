@@ -17,6 +17,8 @@ LIBS += -L/usr/lib/arm-linux-gnueabihf -ljack
 LIBS += -L../lib/qtjack -lqtjack
 LIBS += -L$LIBSRC -lfir
 
+PRE_TARGETDEPS += ../lib/qtjack/libqtjack.a
+
 #outputs
 TARGET          = slave
 DESTDIR         = bin 

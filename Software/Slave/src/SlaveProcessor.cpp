@@ -43,13 +43,12 @@ SlaveProcessor::SlaveProcessor(QtJack::Client& client) : Processor(client)
 
 void SlaveProcessor::process(int samples)
 {
-    cout << currentSample << endl;
     for (int pos = 0 ; pos < samples; pos++)
     {
         /* filter the current sample and copy to the relevant output buffer */
         inputSample = in.buffer(samples).read(pos, &readOkay);
 
-        currentSample = firWoof->filter(inputSample);
+        //currentSample = firWoof->filter(inputSample);
         //wooferOut.buffer(samples).write(pos, currentSample);
 
         //currentSample = firTweet->filter(inputSample);
@@ -63,6 +62,9 @@ void SlaveProcessor::process(int samples)
         m_alsaBuffer[pos] = currentSample;
 
     }
+    cout << "INPUT: " << inputSample << endl;
+    cout << "OUTPUT: "<< currentSample << endl;
+
     /* output through alsa */
     m_dac->WriteInterleaved(m_alsaBuffer);
 
