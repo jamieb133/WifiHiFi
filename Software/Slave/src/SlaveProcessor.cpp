@@ -13,6 +13,8 @@
 
 #include "SlaveProcessor.h"
 
+#define BUFFSIZE 4096
+
 using namespace std;
 
 SlaveProcessor::SlaveProcessor(QtJack::Client& client) : Processor(client)
@@ -33,7 +35,6 @@ SlaveProcessor::SlaveProcessor(QtJack::Client& client) : Processor(client)
     tweeterOut = client.registerAudioOutPort("tweet");
 
     ringBuffer = QtJack::AudioRingBuffer(BUFFSIZE);
-    startupFlag = true;
 
     m_dac = new AlsaController(client);
     m_alsaBuffer = new int64_t[client.bufferSize()];
@@ -63,6 +64,6 @@ void SlaveProcessor::process(int samples)
 
     }
     /* output through alsa */
-    m_dac->WriteInterleaved(m_alsaBuffer)
+    m_dac->WriteInterleaved(m_alsaBuffer);
 
 }

@@ -7,13 +7,14 @@ QT              -= gui
 #includes
 HEADERS         = ./inc/*.h
 INCLUDEPATH     += ./inc/
-INCLUDEPATH     += ../qtjack
+INCLUDEPATH     += ../lib/qtjack
 
 #inputs
 SOURCES         = ./src/*.cpp
 
+LIBS += -L/usr/lib/arm-linux-gnueabihf -lasound
 LIBS += -L/usr/lib/arm-linux-gnueabihf -ljack
-LIBS += -L../qtjack -lqtjack
+LIBS += -L../lib/qtjack -lqtjack
 LIBS += -L$LIBSRC -lfir
 
 #outputs

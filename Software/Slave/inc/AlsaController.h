@@ -8,7 +8,10 @@
  * @copyright Copyright (c) 2019
  * 
  */
+#ifndef ALSACONTROLLER_H 
+#define ALSACONTROLLER_H
 
+#include <client.h>
 #include <alsa/asoundlib.h>
 
 /**
@@ -25,5 +28,9 @@ class AlsaController
         int RecoverXRuns(int status);
         snd_pcm_hw_params_t* m_hwParams;
         snd_pcm_t* m_playbackHandle;
+        unsigned int m_periodSize;
+        unsigned int m_sampleRate;
 
-}
+};
+
+#endif //ALSACONTROLLER_H
