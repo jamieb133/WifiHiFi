@@ -13,9 +13,13 @@
 
 #include "SlaveProcessor.h"
 
-#define BUFFSIZE 4096
+#include <QWaitCondition>
+
+#define BUFFSIZE 16384
 
 using namespace std;
+
+extern QWaitCondition notify;
 
 SlaveProcessor::SlaveProcessor(QtJack::Client& client) : Processor(client)
 {
@@ -27,45 +31,58 @@ SlaveProcessor::SlaveProcessor(QtJack::Client& client) : Processor(client)
     cout << "Crossover frequency: " << cutoff << "Hz " << "(" << xoverFreq << ")" << endl;
     cout << "Sample rate: " << client.sampleRate() << "Hz"<< endl;
 
+    m_bufferSize = client.bufferSize();
+    m_sampleRate = client.sampleRate();
+
     firWoof = new CrossoverFilter(LOWPASS, xoverFreq, taps);
     firTweet = new CrossoverFilter(HIGHPASS, xoverFreq, taps);
 
     in = client.registerAudioInPort("in");
-    wooferOut = client.registerAudioOutPort("woof");
-    tweeterOut = client.registerAudioOutPort("tweet");
 
-    ringBuffer = QtJack::AudioRingBuffer(BUFFSIZE);
+    ringBuffer = new boost::circular_buffer<double>(BUFFSIZE);
 
-    m_dac = new AlsaController(client);
+    //m_dac = new AlsaController(client);
     m_alsaBuffer = new int64_t[client.bufferSize()];
 
 }
 
 void SlaveProcessor::process(int samples)
 {
+    //m_mutex.lock();
+    //cout << "SLAVE PROCESS" << endl;
+
+    double inputSample;
+    int64_t currentSample;
+    m_lostPacket = true;
+    
     for (int pos = 0 ; pos < samples; pos++)
     {
-        /* filter the current sample and copy to the relevant output buffer */
+        /* copy sample from input buffer to ring buffer */
         inputSample = in.buffer(samples).read(pos, &readOkay);
-
-        //currentSample = firWoof->filter(inputSample);
-        //wooferOut.buffer(samples).write(pos, currentSample);
-
-        //currentSample = firTweet->filter(inputSample);
-        //tweeterOut.buffer(samples).write(pos, currentSample);
-
-        /* copy current sample to local ALSA buffer */
-        /* TODO: move this to seperate thread that reads from big ring buffer */
-        currentSample = static_cast<int64_t>(inputSample*0x10000000);
-        //currentSample = currentSample << 32;
-
-        m_alsaBuffer[pos] = currentSample;
-
+        ringBuffer->push_back(inputSample);
     }
-    cout << "INPUT: " << inputSample << endl;
-    cout << "OUTPUT: "<< currentSample << endl;
+    cout << "PROCESSOR: " << inputSample << endl;
+    
 
-    /* output through alsa */
-    m_dac->WriteInterleaved(m_alsaBuffer);
+    /* notify the ALSA thread that new buffer is ready */
+    notify.wakeAll();
+    //m_mutex.unlock();
 
+}
+
+bool SlaveProcessor::lostPacket() const
+{
+    //m_mutex.lock();
+    return m_lostPacket;
+    //m_mutex.unlock();
+}
+
+int SlaveProcessor::bufferSize() const
+{
+    return m_bufferSize;
+}
+
+int SlaveProcessor::sampleRate() const
+{
+    return m_sampleRate;
 }
