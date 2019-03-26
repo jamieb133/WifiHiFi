@@ -1,7 +1,18 @@
+/**
+ * @file AlsaWorker.h
+ * @author Jamie Brown
+ * @brief 
+ * @version 0.1
+ * @date 2019-03-26
+ * 
+ * @copyright Copyright (c) 2019
+ * 
+ */
 
 #ifndef ALSAWORKER_H
 #define ALSAWORKER_H
 
+#include "CrossoverFilter.h"
 #include "AlsaController.h"
 #include "SlaveProcessor.h"
 
@@ -10,6 +21,7 @@
 #include <QTimer>
 #include <RingBuffer>
 #include <AudioBuffer>
+#include <Fir1.h>
 
 class AlsaWorker : public QObject
 {
@@ -23,6 +35,10 @@ private slots:
     void Work();
 
 private:
+    Fir1* fir;
+    CrossoverFilter* firWoof;
+    CrossoverFilter* firTweet;
+
     AlsaController* m_dac;
     QtJack::AudioBuffer* m_buffer;
     int64_t* m_alsaBuffer;

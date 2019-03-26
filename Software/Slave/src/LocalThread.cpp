@@ -32,7 +32,7 @@ LocalThread::LocalThread()
  */
 void LocalThread::run()
 {
-    cout << "LOCAL THREAD: starting sensor thread..." << endl;
+    cout << "LOCAL THREAD: starting local thread..." << endl;
 
     /* kick off the thread */
     exec();

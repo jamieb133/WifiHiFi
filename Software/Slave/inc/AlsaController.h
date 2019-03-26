@@ -13,6 +13,7 @@
 
 #include <Client>
 #include <alsa/asoundlib.h>
+#include <string>
 
 /**
  * @brief 
@@ -21,7 +22,7 @@
 class AlsaController
 {
     public:
-        AlsaController(QtJack::Client& client);
+        AlsaController(QtJack::Client& client, const char* pcmDevice);
         bool WriteInterleaved(int64_t* buffer);
 
     private:

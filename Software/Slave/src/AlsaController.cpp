@@ -22,13 +22,14 @@ using namespace std;
  * 
  * @param client A reference to the JACK client using this device
  */
-AlsaController::AlsaController(QtJack::Client& client)
+AlsaController::AlsaController(QtJack::Client& client, const char* pcmDevice)
 {
     int status; 
     m_periodSize = client.bufferSize();
     m_sampleRate = client.sampleRate();
 
-    if ((status = snd_pcm_open (&m_playbackHandle, "hw:0", SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
+    /* normally this would be "hw:0" */
+    if ((status = snd_pcm_open (&m_playbackHandle, pcmDevice, SND_PCM_STREAM_PLAYBACK, 0)) < 0) {
         cout << "ALSA: cannot open audio device " << snd_strerror (status) << endl;
         exit (1);
     }
@@ -100,7 +101,7 @@ bool AlsaController::WriteInterleaved(int64_t* buffer)
         else
         {
             /* write was successful */
-            cout << "ALSA: done" << endl;
+            //cout << "ALSA: done" << endl;
             return true;
         }
         

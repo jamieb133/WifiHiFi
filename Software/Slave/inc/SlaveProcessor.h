@@ -1,7 +1,17 @@
+/**
+ * @file SlaveProcessor.h
+ * @author Jamie Brown
+ * @brief 
+ * @version 0.1
+ * @date 2019-03-26
+ * 
+ * @copyright Copyright (c) 2019
+ * 
+ */
+
 #ifndef SLAVEPROCESSOR_H
 #define SLAVEPROCESSOR_H
 
-#include "CrossoverFilter.h"
 #include "AlsaController.h"
 
 #include <QMutex>
@@ -9,7 +19,7 @@
 #include <Processor>
 #include <RingBuffer>
 #include <boost/circular_buffer.hpp>
-#include <Fir1.h>
+
 
 class SlaveProcessor : public QtJack::Processor 
 {
@@ -19,18 +29,17 @@ public:
     //QtJack::AudioRingBuffer ringBuffer;
     boost::circular_buffer<double>* ringBuffer;
 
-    bool lostPacket() const;
     int bufferSize() const;
     int sampleRate() const;
+    int bitDepth() const;
 private:
-    Fir1* fir;
-    CrossoverFilter* firWoof;
-    CrossoverFilter* firTweet;
+    
 
     int64_t* m_alsaBuffer;
     AlsaController* m_dac;
     int m_bufferSize;
     int m_sampleRate;
+    double m_inputSample;
 
     QtJack::AudioPort in;
 
