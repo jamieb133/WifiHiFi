@@ -19,6 +19,8 @@
 #include <QObject>
 #include <QMutex>
 #include <QTimer>
+#include <QUdpSocket>
+
 #include <RingBuffer>
 #include <AudioBuffer>
 #include <Fir1.h>
@@ -29,7 +31,10 @@ class AlsaWorker : public QObject
 
 public:
     explicit AlsaWorker(QtJack::Client& client, SlaveProcessor* processor);
-    
+
+public slots:
+    void Attenuate(float factor);
+
 private slots:
 //Q_SLOTS:
     void Work();
@@ -45,6 +50,13 @@ private:
     SlaveProcessor *m_processor;
     QMutex m_mutex;
     QtJack::AudioPort in;
+
+    /**
+     * @brief attenuation factor 
+     * 
+     */
+    float m_atten = 1.0;
+
   
 };
 

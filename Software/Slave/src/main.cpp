@@ -11,11 +11,13 @@
 
 #include <QCoreApplication>
 #include <QWaitCondition>
+#include <QThread>
 #include <iostream>
 
 #include "SlaveProcessor.h"
 #include "LocalThread.h"
 #include "AlsaWorker.h"
+#include "ClientController.h"
 
 using namespace std;
 
@@ -26,7 +28,7 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
     QtJack::Client client;
-    client.connectToServer("WiSpeak");
+    client.connectToServer("WifiHifi");
 
     SlaveProcessor processor(client);
     client.setMainProcessor(&processor);
@@ -36,9 +38,15 @@ int main(int argc, char *argv[])
     alsaW.moveToThread(&localT);
     QObject::connect(&localT, SIGNAL(started()), &alsaW, SLOT(Work()));
 
+    QThread controllerThread;
+    ClientController controller(&alsaW);
+    controller.moveToThread(&controllerThread);
+    QObject::connect(&controllerThread, SIGNAL(started()), &controller, SLOT(Start()));
+
     /* start client and local thread */
     client.activate();
     localT.start();
+    controllerThread.start();
 
     return a.exec();
 }

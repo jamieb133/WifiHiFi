@@ -74,12 +74,12 @@ void AlsaWorker::Work()
             m_processor->ringBuffer->pop_front(); //shift buffer
 
             /* unfiltered  */
-            leftSample = inputSample; 
-            rightSample = inputSample;
+            leftSample = inputSample * m_atten; 
+            rightSample = inputSample * m_atten;
 
             /* apply crossover filters */
-            leftSample = firWoof->filter(inputSample);
-            rightSample = firTweet->filter(inputSample);
+            //leftSample = firWoof->filter(inputSample);
+            //rightSample = firTweet->filter(inputSample);
             
             /* interleave each channel into MSB and LSB */
             leftSample32 = static_cast<int64_t>(leftSample*0x10000000);
@@ -87,8 +87,8 @@ void AlsaWorker::Work()
             rightSample32 = static_cast<int64_t>(rightSample*0x10000000);
             rightSample32 = rightSample32 << 32;
             rightSample32 = rightSample32 & 0xFFFFFFFF00000000; //shift right sample to 32 MSB
-            currentSample = rightSample32 | leftSample32; 
-            m_alsaBuffer[pos] = currentSample;                          
+            currentSample = rightSample32 | leftSample32;                           
+            m_alsaBuffer[pos] = currentSample;
 
             /* any non-zero samples in a potential packet indicate that it was delivered 
                 not sure this is the best method... */
@@ -142,4 +142,9 @@ void AlsaWorker::Work()
     }
 
     
+}
+
+void AlsaWorker::Attenuate(float factor)
+{
+    m_atten = factor;
 }
