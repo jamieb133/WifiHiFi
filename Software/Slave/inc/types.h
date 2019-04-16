@@ -8,13 +8,58 @@
  * @copyright Copyright (c) 2019
  * 
  */
+#ifndef TYPES_H
+#define TYPES_H
 
-/**
- * @brief 
- * 
- */
-typedef enum {
-    LOWPASS,
-    BANDPASS,
-    HIGHPASS
-} filter_t;
+namespace WifiHifi
+{
+    /**
+     * @brief 
+     * 
+     */
+    typedef enum {
+        LOWPASS,
+        BANDPASS,
+        HIGHPASS,
+        PEAK,
+        LOWSHELVE,
+        HIGHSHELVE
+    } filter_t;
+
+    /**
+     * @brief 
+     * 
+     */
+    typedef struct filterConfig {
+        filter_t type;  //filter type
+        double fCut;    //cutoff frequency
+        double dbGain;    //gain in db
+        double q;       //quality factor
+        double atten;
+    }filterConfig_t;
+
+    /**
+     * @brief 
+     * 
+     */
+    typedef struct ThreeBand {
+        filterConfig_t bass;
+        filterConfig_t mid;
+        filterConfig_t treble;
+    } ThreeBand_t;
+
+    /**
+     * @brief 
+     * 
+     */
+    typedef struct IIRCoeffs {
+        double a0;
+        double a1;
+        double a2;
+        double b0;
+        double b1;
+        double b2;
+    } IIRCoeffs_t;
+
+};
+#endif //TYPES_H

@@ -33,8 +33,57 @@ AlsaWorker::AlsaWorker(QtJack::Client& client, SlaveProcessor* processor)
 
     double xoverFreq = XOVERFREQ / static_cast<double>(client.sampleRate()); //normalise to nyquist
 
-    firWoof = new CrossoverFilter(LOWPASS, xoverFreq, TAPS);
-    firTweet = new CrossoverFilter(HIGHPASS, xoverFreq, TAPS);
+    firWoof = new FIRFilter(LOWPASS, xoverFreq, TAPS);
+    firTweet = new FIRFilter(HIGHPASS, xoverFreq, TAPS); 
+
+    IIRCoeffs_t bassCoeffs;
+    IIRCoeffs_t midCoeffs;
+    IIRCoeffs_t trebleCoeffs;
+
+    /* pre-calculated coefficients for shelving filters */
+    bassCoeffs.a0 = 0;
+    bassCoeffs.a1 = 0;
+    bassCoeffs.a2 = 0;
+    bassCoeffs.b0 = 0;
+    bassCoeffs.b1 = 0;
+    bassCoeffs.b2 = 0;
+
+    midCoeffs.a0 = 0;
+    midCoeffs.a1 = 0;
+    midCoeffs.a2 = 0;
+    midCoeffs.b0 = 0;
+    midCoeffs.b1 = 0;
+    midCoeffs.b2 = 0;
+
+    trebleCoeffs.a0 = 0;
+    trebleCoeffs.a1 = 0;
+    trebleCoeffs.a2 = 0;
+    trebleCoeffs.b0 = 0;
+    trebleCoeffs.b1 = 0;
+    trebleCoeffs.b2 = 0;
+
+
+    filterConfig_t midConfig;
+    midConfig.type = PEAK;
+    midConfig.fCut = 1000;
+    midConfig.dbGain = 1;
+    midConfig.q = 1 / sqrt(2); 
+    m_midEQ = new IIRFilter(midConfig, client.sampleRate());
+
+    filterConfig_t bassConfig;
+    bassConfig.type = LOWSHELVE;
+    bassConfig.fCut = 1000;
+    bassConfig.dbGain = 1;
+    bassConfig.q = 1 / (sqrt(2));
+    m_bassEQ = new IIRFilter(bassConfig, client.sampleRate());
+
+    filterConfig_t trebleConfig;
+    trebleConfig.type = HIGHSHELVE;
+    trebleConfig.fCut = 1000;
+    trebleConfig.dbGain = -10;
+    trebleConfig.q = 1 / (sqrt(2)); 
+    m_trebleEQ = new IIRFilter(trebleConfig, client.sampleRate());
+
 }
 
 void AlsaWorker::Work()
@@ -48,7 +97,7 @@ void AlsaWorker::Work()
     int64_t currentSample;
     int64_t leftSample32 = 0;
     int64_t rightSample32 = 0;
-    double inputSample, leftSample, rightSample;
+    double inputSample, bassSample, midSample, trebleSample, leftSample, rightSample;
     int posPacket = 0;
 
     int samplesPerPacket = MTU / (m_processor->bitDepth() / 8);
@@ -72,6 +121,14 @@ void AlsaWorker::Work()
             /* copy from ring buffer into local ALSA buffer */
             inputSample = m_processor->ringBuffer->front();
             m_processor->ringBuffer->pop_front(); //shift buffer
+
+            /* apply 3-band EQ filters */
+            if (m_eqEnabled)
+            {
+                inputSample = m_midEQ->filter(inputSample);
+                inputSample = m_bassEQ->filter(inputSample);
+                inputSample = m_trebleEQ->filter(inputSample);
+            }
 
             /* unfiltered  */
             leftSample = inputSample * m_atten; 
@@ -147,4 +204,39 @@ void AlsaWorker::Work()
 void AlsaWorker::Attenuate(float factor)
 {
     m_atten = factor;
+}
+
+void AlsaWorker::AdjustMid(filterConfig_t* params)
+{
+    m_midEQ->Update(*params);
+}
+
+void AlsaWorker::AdjustBass(filterConfig_t* params)
+{
+    m_bassEQ->Update(*params);
+}
+
+void AlsaWorker::AdjustTreble(filterConfig_t* params)
+{
+    m_trebleEQ->Update(*params);
+}
+
+void AlsaWorker::EnableEq()
+{
+    m_eqEnabled = true;
+}
+
+void AlsaWorker::DisableEq()
+{
+    m_eqEnabled = false;
+}
+
+ThreeBand_t AlsaWorker::EQSettings()
+{
+    ThreeBand_t eq;
+    eq.bass = m_bassEQ->getParams();
+    eq.mid = m_midEQ->getParams();
+    eq.treble = m_trebleEQ->getParams();
+
+    return eq;
 }

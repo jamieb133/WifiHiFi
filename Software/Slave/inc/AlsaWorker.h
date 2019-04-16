@@ -12,7 +12,8 @@
 #ifndef ALSAWORKER_H
 #define ALSAWORKER_H
 
-#include "CrossoverFilter.h"
+#include "FIRFilter.h"
+#include "IIRFilter.h"
 #include "AlsaController.h"
 #include "SlaveProcessor.h"
 
@@ -32,6 +33,13 @@ class AlsaWorker : public QObject
 public:
     explicit AlsaWorker(QtJack::Client& client, SlaveProcessor* processor);
 
+    ThreeBand_t EQSettings();
+    void AdjustMid(filterConfig_t* params);
+    void AdjustBass(filterConfig_t* params);
+    void AdjustTreble(filterConfig_t* params);
+    void EnableEq();
+    void DisableEq();
+
 public slots:
     void Attenuate(float factor);
 
@@ -41,8 +49,12 @@ private slots:
 
 private:
     Fir1* fir;
-    CrossoverFilter* firWoof;
-    CrossoverFilter* firTweet;
+    FIRFilter* firWoof;
+    FIRFilter* firTweet;
+
+    IIRFilter* m_midEQ;
+    IIRFilter* m_trebleEQ;
+    IIRFilter* m_bassEQ;
 
     AlsaController* m_dac;
     QtJack::AudioBuffer* m_buffer;
@@ -56,6 +68,8 @@ private:
      * 
      */
     float m_atten = 1.0;
+
+    bool m_eqEnabled = true;
 
   
 };

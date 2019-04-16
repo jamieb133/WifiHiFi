@@ -51,31 +51,81 @@ void ClientController::readyRead()
     QHostAddress sender;
     quint16 senderPort;
     m_socket->readDatagram(buffer.data(), buffer.size(), &sender, &senderPort);
+    bool ok;
+    filterConfig_t settings;
 
     switch(buffer.operator[](0))
         {
             case 'M':
+            {
                 buffer.remove(0, 1);
-                qDebug() << "MID REQUEST: " << sender.toString() << endl;
-                qDebug() << "Value: " << buffer.operator[](0) << endl;
-                break;
-            case 'B':
-                qDebug() << "BASS REQUEST: " << sender.toString() << endl;
-                qDebug() << "Value: " << buffer.data() << endl;
-                break;
-            case 'T':
-                qDebug() << "TREBLE REQUEST: " << sender.toString() << endl;
-                qDebug() << "Value: " << buffer.data() << endl;
-                break;
-            case 'V':
-                qDebug() << "VOLUME REQUEST: " << sender.toString() << endl;
-                qDebug() << "Value: " << buffer.data() << endl;
+                //qDebug() << "MID REQUEST: " << sender.toString() << endl;
+                //qDebug() << "Value: " << buffer.operator[](0) << endl;
 
                 buffer.remove(0, 1);
-                bool ok;
+                float midRequest = buffer.toFloat(&ok);
+                settings = m_alsa->EQSettings().mid;
+                /* scale gain from -10 to 0 dB */
+                settings.dbGain = (midRequest / 10.0) - 10.0;
+
+                m_alsa->AdjustMid(&settings);
+                break;
+            }
+            case 'B':
+            {
+                //qDebug() << "BASS REQUEST: " << sender.toString() << endl;
+                //qDebug() << "Value: " << buffer.data() << endl;
+
+                buffer.remove(0, 1);
+                float bassRequest = buffer.toFloat(&ok);
+                settings = m_alsa->EQSettings().bass;
+                /* scale gain from -10 to 0 dB */
+                settings.dbGain = (bassRequest / 10.0) - 10.0;
+            
+                m_alsa->AdjustBass(&settings);
+                break;
+            }
+            case 'T':
+            {
+                //qDebug() << "TREBLE REQUEST: " << sender.toString() << endl;
+                //qDebug() << "Value: " << buffer.data() << endl;
+
+                buffer.remove(0, 1);
+                float trebleRequest = buffer.toFloat(&ok);
+                settings = m_alsa->EQSettings().treble;
+                /* scale gain from -10 to 0 dB */
+                settings.dbGain = (trebleRequest / 10.0) - 10.0;
+
+                m_alsa->AdjustTreble(&settings);
+                break;
+            }
+            case 'V':
+            {
+                //qDebug() << "VOLUME REQUEST: " << sender.toString() << endl;
+                //qDebug() << "Value: " << buffer.data() << endl;
+
+                buffer.remove(0, 1);
                 float vol = buffer.toFloat(&ok) / 100.0;
-                //qDebug() << vol;
+                
                 m_alsa->Attenuate(vol);
                 break;
+            }
+            case 'E':
+            {
+                eqOn = !eqOn;
+                //qDebug() << "EQ REQUEST: " << sender.toString();
+                //qDebug() << "Value: " << eqOn;
+
+                if (eqOn)
+                {
+                    m_alsa->DisableEq();
+                }
+                else
+                {
+                    m_alsa->EnableEq();
+                }
+                break;
+            }
+                
         }
 }

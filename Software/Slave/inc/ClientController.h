@@ -83,6 +83,8 @@ private:
      */
     AlsaWorker* m_alsa;
 
+    bool eqOn = false;
+
   
 };
 
