@@ -1,0 +1,14 @@
+Project Outputs Generation Report
+---------------------------------
+Start Output Generation At 12:36:58 On 16/04/2019
+
+Output: BOM_PartType
+Type  : BOM
+From  : Variant [[No Variations]] of Project [Wireless Surround Sound.PrjPcb]
+   Generated File[BOM_PartType-Wireless Surround Sound.xlsx]
+
+
+Files Generated   : 1
+Documents Printed : 0
+
+Finished Output Generation At 12:37:04 On 16/04/2019
