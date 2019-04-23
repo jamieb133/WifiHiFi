@@ -63,6 +63,11 @@ private:
     QMutex m_mutex;
     QtJack::AudioPort in;
 
+    QtJack::AudioRingBuffer m_FirLowPassBuffer;
+    QtJack::AudioRingBuffer m_FirHighPassBuffer;
+
+    
+
     /**
      * @brief attenuation factor 
      * 

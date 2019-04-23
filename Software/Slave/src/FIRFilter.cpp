@@ -73,7 +73,8 @@ bool FIRFilter::HighpassCoeffs(int taps, double fCut)
     for(int count = 0 ; count < taps ; count++)
     {
         /* calculate hamming window */
-        hamWin[count] = 0.54 - ( 0.46 * cos( ( 2 * PI * count ) / taps ) );
+        //hamWin[count] = 0.54 - ( 0.46 * cos( ( 2 * PI * count ) / taps ) );
+        hamWin[count] = 0.42 + ( 0.5 * cos( ( 2 * PI * count ) / taps ) ) + (0.08 * cos( ( 4 * PI * count ) / taps ) ); //this is actually a blackman window 
 
         /* prevent division by zero */
         if (count == 0)
@@ -103,7 +104,8 @@ bool FIRFilter::LowpassCoeffs(int taps, double fCut)
     for(int count = 0 ; count < taps ; count++)
     {
         /* calculate hamming window */
-        hamWin[count] = 0.54 - ( 0.46 * cos( ( 2 * PI * count ) / taps ) );
+        //hamWin[count] = 0.54 - ( 0.46 * cos( ( 2 * PI * count ) / taps ) );
+        hamWin[count] = 0.42 + ( 0.5 * cos( ( 2 * PI * count ) / taps ) ) + (0.08 * cos( ( 4 * PI * count ) / taps ) ); //this is actually a blackman window 
 
         /* prevent division by zero */
         if (count == 0)

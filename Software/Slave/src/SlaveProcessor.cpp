@@ -15,7 +15,8 @@
 
 #include <QWaitCondition>
 
-#define BUFFSIZE 16384
+//#define BUFFSIZE 16384
+#define BUFFSIZE 40960
 
 using namespace std;
 
@@ -30,12 +31,23 @@ SlaveProcessor::SlaveProcessor(QtJack::Client& client) : Processor(client)
     in = client.registerAudioInPort("in");
     ringBuffer = new boost::circular_buffer<double>(BUFFSIZE);
 
+    /* register test points */
+    /*
+    CrossoverLP_out = client.registerAudioOutPort("WifiHifiCrossoverLP_test");
+    CrossoverHP_out = client.registerAudioOutPort("WifiHifiCrossoverHP_test");
+    EqBass_out = client.registerAudioOutPort("WifiHifiEqBass_test");
+    EqMid_out = client.registerAudioOutPort("WifiHifiEqMid_test");
+    EqTreble_out = client.registerAudioOutPort("WifiHifiEqTreble_test");
+    TweeterNotch_out = client.registerAudioOutPort("WifiHifiTweeterNotch_test");
+    WooferShelf_out = client.registerAudioOutPort("WifiHifiWooferShelf_test");
+    */
+
 }
 
 void SlaveProcessor::process(int samples)
 {
     int64_t currentSample;
-    
+    //cout << "write" << endl;
     for (int pos = 0 ; pos < samples; pos++)
     {
         /* copy sample from input buffer to ring buffer */

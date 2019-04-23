@@ -16,7 +16,7 @@
 #include <unistd.h>
 
 #define MTU 1500 //TODO: is there a way to query this from JACK at runtime?
-#define XOVERFREQ 100 //TODO: what is the crossover frequency for the drivers/cabinet?
+#define XOVERFREQ 2500 //TODO: what is the crossover frequency for the drivers/cabinet?
 #define TAPS 100 //TODO: how mnay can we get away with?
 #define PCMDEVICE "hw:0"
 
@@ -94,7 +94,7 @@ void AlsaWorker::Work()
     bool readOkay;
     bool packetDropped = true;
     bool streamRecovered = false;
-    int64_t currentSample;
+    int64_t currentSample; //interleaved sample
     int64_t leftSample32 = 0;
     int64_t rightSample32 = 0;
     double inputSample, bassSample, midSample, trebleSample, leftSample, rightSample;
@@ -109,13 +109,18 @@ void AlsaWorker::Work()
     notify.wait(&m_mutex);
     m_mutex.unlock();
 
+    m_atten = 1;
+
     while(true)
     {     
         m_mutex.lock();
 
         /* TODO: only call if this thread catches up to jack thread */
-        notify.wait(&m_mutex);
-
+        if(!notify.wait(&m_mutex, 93))
+        {
+            cout << "ALSA WORKER: thread sync error" << endl;
+        }
+        
         for (int pos = 0; pos < m_processor->bufferSize(); pos++)
         {
             /* copy from ring buffer into local ALSA buffer */
@@ -123,22 +128,38 @@ void AlsaWorker::Work()
             m_processor->ringBuffer->pop_front(); //shift buffer
 
             /* apply 3-band EQ filters */
+            
             if (m_eqEnabled)
             {
                 inputSample = m_midEQ->filter(inputSample);
                 inputSample = m_bassEQ->filter(inputSample);
                 inputSample = m_trebleEQ->filter(inputSample);
             }
+            
 
             /* unfiltered  */
-            leftSample = inputSample * m_atten; 
-            rightSample = inputSample * m_atten;
+            leftSample = inputSample * m_atten; //woofer
+            rightSample = inputSample * m_atten; //tweeter
+            //leftSample = inputSample; //woofer
+            //rightSample = inputSample; //tweeter
 
             /* apply crossover filters */
-            //leftSample = firWoof->filter(inputSample);
-            //rightSample = firTweet->filter(inputSample);
+            if (true)
+            {
+                leftSample = firWoof->filter(inputSample) * 2.5;
+                rightSample = firTweet->filter(inputSample) * 2.0;
+
+                /* output to test points */
+                //m_FirLowPassBuffer.write(&leftSample, 1)
+                //m_FirHighPassBuffer.write(&rightSample, 1)
+               
+            }
             
             /* interleave each channel into MSB and LSB */
+
+            //leftSample = 0; //woofer
+            //rightSample = 0; //tweeter
+
             leftSample32 = static_cast<int64_t>(leftSample*0x10000000);
             leftSample32 = leftSample32 & 0x00000000FFFFFFFF;
             rightSample32 = static_cast<int64_t>(rightSample*0x10000000);
@@ -184,12 +205,14 @@ void AlsaWorker::Work()
         }
 
         /* output through alsa */
+        
         if ( !m_dac->WriteInterleaved(m_alsaBuffer) )
         {
             cout << "ALSA WORKER: failed to write to device" << endl;
             exit(1);
         }
-
+        
+        /* route filter outputs to test points */
 
         //cout << "ALSA WORKER: input sample " << inputSample << endl;
         //cout << "ALSA WORKER: output sample "<< currentSample << endl;

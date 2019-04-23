@@ -32,6 +32,15 @@ public:
     int bufferSize() const;
     int sampleRate() const;
     int bitDepth() const;
+
+    /* filter test points */
+    QtJack::AudioPort CrossoverLP_out;
+    QtJack::AudioPort CrossoverHP_out;
+    QtJack::AudioPort EqBass_out;
+    QtJack::AudioPort EqMid_out;
+    QtJack::AudioPort EqTreble_out;
+    QtJack::AudioPort TweeterNotch_out;
+    QtJack::AudioPort WooferShelf_out;
 private:
     
 
@@ -43,6 +52,8 @@ private:
 
     QtJack::AudioPort in;
 
+    
+    
     bool m_lostPacket;
     bool readOkay;
 
