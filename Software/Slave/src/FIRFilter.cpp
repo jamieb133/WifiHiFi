@@ -34,6 +34,11 @@ FIRFilter::FIRFilter(filter_t type, double fCut, int taps)
             //if ( HighpassCoeffs(taps, fCut) ) { m_fir = new Fir1(highpassImpulse, 99); }
             else { m_fir = NULL; }
             break;
+        case ALLPASS:
+            if ( AllpassCoeffs(taps) ) { m_fir = new Fir1(m_coeffs, taps); }
+            //if ( HighpassCoeffs(taps, fCut) ) { m_fir = new Fir1(highpassImpulse, 99); }
+            else { m_fir = NULL; }
+            break;
         default:
             std::cout << "ERROR: bad filter parameters" << std::endl;
     }
@@ -127,4 +132,30 @@ bool FIRFilter::LowpassCoeffs(int taps, double fCut)
     cout << "Generated a low-pass FIR filter" << endl;
     delete hamWin;
     return true;
+}
+
+bool FIRFilter::AllpassCoeffs(int taps)
+{
+    m_coeffs = new double[taps]; 
+    double* hamWin = new double[taps]; //hamming window (raised cosine) function
+
+    for(int count = 0 ; count < taps ; count++)
+    {
+        /* calculate hamming window */
+        hamWin[count] = 0.54 - ( 0.46 * cos( ( 2 * PI * count ) / taps ) );   
+        /* allpass so just apply window function */    
+        m_coeffs[count] =  hamWin[count];  
+
+
+        //m_coeffs[count] = 1;                                       
+    }
+    
+    cout << "Generated an all-pass FIR filter" << endl;
+    delete hamWin;
+    return true;
+}
+
+void FIRFilter::reset()
+{
+    m_fir->reset();
 }

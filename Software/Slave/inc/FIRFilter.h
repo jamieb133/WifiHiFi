@@ -40,6 +40,13 @@ class FIRFilter {
          * @return double 
          */
         double filter(double sample);
+
+        /**
+         * @brief remove all samples from the buffer
+         * 
+         * @return double 
+         */
+        void reset();
         
     private:
         /**
@@ -61,6 +68,15 @@ class FIRFilter {
          * @return false 
          */
         bool HighpassCoeffs(int taps, double fCut);
+
+        /**
+         * @brief 
+         * 
+         * @param taps 
+         * @return true 
+         * @return false 
+         */
+        bool AllpassCoeffs(int taps);
         
         /**
          * @brief 

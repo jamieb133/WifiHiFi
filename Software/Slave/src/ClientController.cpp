@@ -1,4 +1,4 @@
-/**
+ /**
  * @file ClientController.cpp
  * @author your name (you@domain.com)
  * @brief 
@@ -11,7 +11,7 @@
 
 #include "ClientController.h"
 #include <wiringPiI2C.h>
-
+#include <math.h>
 
 #define MCAST_ADDR "239.1.1.1"
 #define DISCOVERY_PORT 1233
@@ -37,6 +37,14 @@ ClientController::ClientController(AlsaWorker* alsa)
     }
     
     connect(m_socket, SIGNAL(readyRead()), this, SLOT(readyRead()));
+
+    /* logarithmic volume */
+    m_dbVols = new int[100];
+    for (int count = 1; count <= 100; count++)
+    {
+        m_dbVols[count-1] = 30*log10(static_cast<float>(count)); //scale from 0 to 60 in linear gain
+        std::cout << m_dbVols[count-1] << std::endl;
+    }
 }
 
 void ClientController::Start()
@@ -46,7 +54,7 @@ void ClientController::Start()
 
 void ClientController::readyRead()
 {
-    qDebug() << "CLIENT CONTROLLER: received datagram";
+    //qDebug() << "CLIENT CONTROLLER: received datagram";
 
     QByteArray buffer;
     buffer.resize(m_socket->pendingDatagramSize());
@@ -83,6 +91,8 @@ void ClientController::readyRead()
                 settings = m_alsa->EQSettings().bass;
                 /* scale gain from -10 to 0 dB */
                 settings.dbGain = (bassRequest / 10.0) - 10.0;
+                if(settings.dbGain > 0.0) settings.dbGain = 0.0;
+                if(settings.dbGain < -10.0) settings.dbGain = -10.0;
             
                 m_alsa->AdjustBass(&settings);
                 break;
@@ -107,9 +117,9 @@ void ClientController::readyRead()
                 //qDebug() << "Value: " << buffer.data() << endl;
 
                 buffer.remove(0, 1);
-                float vol = (buffer.toFloat(&ok) / 100.0) * 45.0;
+                //float vol = (buffer.toFloat(&ok) / 100.0) * 45.0;
                 //vol = (vol / 100.0) * 30.0;
-                HardwareVolume(static_cast<int>(vol));
+                HardwareVolume(buffer.toInt(&ok));
                 
                 //m_alsa->Attenuate(vol);
 
@@ -137,18 +147,22 @@ void ClientController::readyRead()
 
 void ClientController::HardwareVolume(int vol)
 {
-    if (vol > 45) vol = 45;
-    if (vol < 0) vol = 0;
-
     int fd;
+    if (vol <= 0) vol = 1;
+    if (vol >= 100)  vol = 100;
+    assert( (vol >= 0) && (vol <= 100));
     
     fd = wiringPiI2CSetup(0x4B);
-    if (int err = wiringPiI2CWrite(fd, vol) < 0)
+
+    if (int err = wiringPiI2CWrite(fd, m_dbVols[vol]) < 0)
+    //if (int err = wiringPiI2CWrite(fd, 0) < 0)
     {
         std::cout << "CLIENT CONTROLLER: failed to write hardware volume" << std::endl;
     }
     
 
-    std::cout << "Volume request" << vol << std::endl;
+    std::cout << "Volume request DB" << m_dbVols[vol] << std::endl;
+    std::cout << "Volume request linear" << vol << std::endl;
+
 
 }

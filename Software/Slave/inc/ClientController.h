@@ -87,6 +87,8 @@ private:
 
     void HardwareVolume(int vol);
 
+    int* m_dbVols;
+
   
 };
 

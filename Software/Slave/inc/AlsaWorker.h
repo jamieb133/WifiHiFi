@@ -59,6 +59,8 @@ private:
     FIRFilter* firWoof;
     FIRFilter* firTweet;
 
+    FIRFilter* m_driftFilter;
+
     IIRFilter* m_midEQ;
     IIRFilter* m_trebleEQ;
     IIRFilter* m_bassEQ;
@@ -78,6 +80,9 @@ private:
     QtJack::Client* m_client;
 
     int m_bufferSize;
+    double m_integDeltaK = 0.0; //integral of the offset
+    double m_resampleMean = 1.0;
+    double *m_smoothBuffer;
     
 
     

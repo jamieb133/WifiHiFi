@@ -23,7 +23,8 @@ namespace WifiHifi
         HIGHPASS,
         PEAK,
         LOWSHELVE,
-        HIGHSHELVE
+        HIGHSHELVE,
+        ALLPASS
     } filter_t;
 
     /**
