@@ -48,6 +48,13 @@ private slots:
     void Work();
 
 private:
+    /**
+     * @brief Calculates the required buffer resizing factor
+     * 
+     * @return int Number of samples to allocate for new outbound buffer
+     */
+    int DriftCorrection();
+
     Fir1* fir;
     FIRFilter* firWoof;
     FIRFilter* firTweet;
@@ -55,16 +62,23 @@ private:
     IIRFilter* m_midEQ;
     IIRFilter* m_trebleEQ;
     IIRFilter* m_bassEQ;
+    IIRFilter* m_notchCorrection;
 
     AlsaController* m_dac;
     QtJack::AudioBuffer* m_buffer;
     int64_t* m_alsaBuffer;
+    int64_t* m_padBuffer;
     SlaveProcessor *m_processor;
     QMutex m_mutex;
     QtJack::AudioPort in;
 
     QtJack::AudioRingBuffer m_FirLowPassBuffer;
     QtJack::AudioRingBuffer m_FirHighPassBuffer;
+
+    QtJack::Client* m_client;
+
+    int m_bufferSize;
+    
 
     
 

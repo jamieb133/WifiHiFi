@@ -84,12 +84,12 @@ AlsaController::AlsaController(QtJack::Client& client, const char* pcmDevice)
  * @return true 
  * @return false 
  */
-bool AlsaController::WriteInterleaved(int64_t* buffer)
+bool AlsaController::WriteInterleaved(int64_t* buffer, int size)
 {
     int status;
     while(1)
     {
-        if ( (status = snd_pcm_writei(m_playbackHandle, buffer, m_periodSize)) < 0)
+        if ( (status = snd_pcm_writei(m_playbackHandle, buffer, size)) < 0)
         {
             /* initial write failed */
             if ( (status = RecoverXRuns(status)) < 0)
@@ -137,4 +137,22 @@ int AlsaController::RecoverXRuns(int status)
 		return 0;
 	}
 	return status;
+}
+
+uint32_t AlsaController::FramesReady()
+{
+    return snd_pcm_avail(m_playbackHandle);
+}
+
+bool AlsaController::Rewind(uint32_t samples)
+{
+    if (snd_pcm_rewind(m_playbackHandle, samples) < 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+    
 }

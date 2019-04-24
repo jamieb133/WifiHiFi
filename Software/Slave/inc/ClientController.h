@@ -85,6 +85,8 @@ private:
 
     bool eqOn = false;
 
+    void HardwareVolume(int vol);
+
   
 };
 

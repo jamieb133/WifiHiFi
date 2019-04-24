@@ -155,6 +155,16 @@ public:
      */
     bool requestTransportReposition(TransportPosition queryTransportPosition);
 
+    /**
+     * @brief Returns a pointer to the actual C API client
+     * 
+     * @return jack_client_t* 
+     */
+    jack_client_t* GetRawClient()
+    {
+      return _jackClient;
+    }
+
 Q_SIGNALS:
     /** Emitted when successfully connected to JACK server. */
     void connectedToServer();

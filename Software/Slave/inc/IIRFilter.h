@@ -53,7 +53,9 @@ public:
      * 
      * @param freq 
      */
-    void Update(filterConfig_t params);
+    void Update(double gain);
+
+    void CreateFilterBank(filterConfig_t params);
 
     /**
      * @brief 
@@ -67,46 +69,51 @@ protected:
      * @brief 
      * 
      */
-    void CalcLowpass(filterConfig_t* params);
+    void CalcLowpass(filterConfig_t* params, IIRCoeffs_t* coeffs);
 
     /**
      * @brief 
      * 
      */
-    void CalcNotch(filterConfig_t* params);
+    void CalcNotch(filterConfig_t* params, IIRCoeffs_t* coeffs);
 
     /**
      * @brief 
      * 
      */
-    void CalcHighpass(filterConfig_t* params);
-
-    /**
-     * @brief 
-     * 
-     * @param params 
-     */
-    void CalcLowShelve(filterConfig_t* params);
+    void CalcHighpass(filterConfig_t* params, IIRCoeffs_t* coeffs);
 
     /**
      * @brief 
      * 
      * @param params 
      */
-    void CalcHighShelve(filterConfig_t* params);
+    void CalcLowShelve(filterConfig_t* params, IIRCoeffs_t* coeffs);
 
     /**
      * @brief 
      * 
      * @param params 
      */
-    void CalcPeak(filterConfig_t* params);
+    void CalcHighShelve(filterConfig_t* params, IIRCoeffs_t* coeffs);
+
+    /**
+     * @brief 
+     * 
+     * @param params 
+     */
+    void CalcPeak(filterConfig_t* params, IIRCoeffs_t* coeffs);
+
+    void PrintCoefficients();
 
     /**
      * @brief biquad coefficients
      * 
      */
-    double m_a0, m_a1, m_a2, m_b0, m_b1, m_b2;
+    //double m_a0, m_a1, m_a2, m_b0, m_b1, m_b2;
+    IIRCoeffs_t* m_coeffs;
+    IIRCoeffs_t* m_filterBank;
+    IIRCoeffs_t* m_bankStart;
 
     /**
      * @brief sample rate

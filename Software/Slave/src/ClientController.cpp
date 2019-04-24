@@ -10,6 +10,8 @@
  */
 
 #include "ClientController.h"
+#include <wiringPiI2C.h>
+
 
 #define MCAST_ADDR "239.1.1.1"
 #define DISCOVERY_PORT 1233
@@ -62,12 +64,12 @@ void ClientController::readyRead()
                 //qDebug() << "MID REQUEST: " << sender.toString() << endl;
                 //qDebug() << "Value: " << buffer.operator[](0) << endl;
 
-                buffer.remove(0, 1);
+                //buffer.remove(0, 1);
                 float midRequest = buffer.toFloat(&ok);
                 settings = m_alsa->EQSettings().mid;
                 /* scale gain from -10 to 0 dB */
                 settings.dbGain = (midRequest / 10.0) - 10.0;
-
+                std::cout << "Mid request: " << midRequest << std::endl; 
                 m_alsa->AdjustMid(&settings);
                 break;
             }
@@ -105,9 +107,12 @@ void ClientController::readyRead()
                 //qDebug() << "Value: " << buffer.data() << endl;
 
                 buffer.remove(0, 1);
-                float vol = buffer.toFloat(&ok) / 100.0;
+                float vol = (buffer.toFloat(&ok) / 100.0) * 45.0;
+                //vol = (vol / 100.0) * 30.0;
+                HardwareVolume(static_cast<int>(vol));
                 
-                m_alsa->Attenuate(vol);
+                //m_alsa->Attenuate(vol);
+
                 break;
             }
             case 'E':
@@ -128,4 +133,22 @@ void ClientController::readyRead()
             }
                 
         }
+}
+
+void ClientController::HardwareVolume(int vol)
+{
+    if (vol > 45) vol = 45;
+    if (vol < 0) vol = 0;
+
+    int fd;
+    
+    fd = wiringPiI2CSetup(0x4B);
+    if (int err = wiringPiI2CWrite(fd, vol) < 0)
+    {
+        std::cout << "CLIENT CONTROLLER: failed to write hardware volume" << std::endl;
+    }
+    
+
+    std::cout << "Volume request" << vol << std::endl;
+
 }

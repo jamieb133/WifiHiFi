@@ -14,6 +14,7 @@ INCLUDEPATH     += ../lib/qtjack
 SOURCES         = ./src/*.cpp
 
 LIBS += -L/usr/lib/arm-linux-gnueabihf -lasound
+LIBS += -L/usr/local/lib -lwiringPi 
 
 LIBS += -L/usr/lib/arm-linux-gnueabihf -ljack
 LIBS += -L../lib/qtjack -lqtjack

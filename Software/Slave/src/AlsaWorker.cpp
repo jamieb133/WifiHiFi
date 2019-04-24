@@ -14,6 +14,7 @@
 #include <QtCore>
 #include <iostream>
 #include <unistd.h>
+#include <jack/jack.h>
 
 #define MTU 1500 //TODO: is there a way to query this from JACK at runtime?
 #define XOVERFREQ 2500 //TODO: what is the crossover frequency for the drivers/cabinet?
@@ -26,9 +27,11 @@ extern QWaitCondition notify;
 
 AlsaWorker::AlsaWorker(QtJack::Client& client, SlaveProcessor* processor)
 {  
+    m_client = &client;
 	m_processor = processor;
     m_buffer = new QtJack::AudioBuffer;
     m_alsaBuffer = new int64_t[m_processor->bufferSize()];
+    m_padBuffer = new int64_t[512];
     m_dac = new AlsaController(client, PCMDEVICE);
 
     double xoverFreq = XOVERFREQ / static_cast<double>(client.sampleRate()); //normalise to nyquist
@@ -36,55 +39,84 @@ AlsaWorker::AlsaWorker(QtJack::Client& client, SlaveProcessor* processor)
     firWoof = new FIRFilter(LOWPASS, xoverFreq, TAPS);
     firTweet = new FIRFilter(HIGHPASS, xoverFreq, TAPS); 
 
-    IIRCoeffs_t bassCoeffs;
-    IIRCoeffs_t midCoeffs;
-    IIRCoeffs_t trebleCoeffs;
-
-    /* pre-calculated coefficients for shelving filters */
-    bassCoeffs.a0 = 0;
-    bassCoeffs.a1 = 0;
-    bassCoeffs.a2 = 0;
-    bassCoeffs.b0 = 0;
-    bassCoeffs.b1 = 0;
-    bassCoeffs.b2 = 0;
-
-    midCoeffs.a0 = 0;
-    midCoeffs.a1 = 0;
-    midCoeffs.a2 = 0;
-    midCoeffs.b0 = 0;
-    midCoeffs.b1 = 0;
-    midCoeffs.b2 = 0;
-
-    trebleCoeffs.a0 = 0;
-    trebleCoeffs.a1 = 0;
-    trebleCoeffs.a2 = 0;
-    trebleCoeffs.b0 = 0;
-    trebleCoeffs.b1 = 0;
-    trebleCoeffs.b2 = 0;
-
-
     filterConfig_t midConfig;
     midConfig.type = PEAK;
     midConfig.fCut = 1000;
-    midConfig.dbGain = 1;
+    midConfig.dbGain = 0;
     midConfig.q = 1 / sqrt(2); 
     m_midEQ = new IIRFilter(midConfig, client.sampleRate());
 
     filterConfig_t bassConfig;
     bassConfig.type = LOWSHELVE;
     bassConfig.fCut = 1000;
-    bassConfig.dbGain = 1;
+    bassConfig.dbGain = 0;
     bassConfig.q = 1 / (sqrt(2));
     m_bassEQ = new IIRFilter(bassConfig, client.sampleRate());
 
     filterConfig_t trebleConfig;
     trebleConfig.type = HIGHSHELVE;
     trebleConfig.fCut = 1000;
-    trebleConfig.dbGain = -10;
+    trebleConfig.dbGain = 0;
     trebleConfig.q = 1 / (sqrt(2)); 
     m_trebleEQ = new IIRFilter(trebleConfig, client.sampleRate());
 
+    filterConfig_t notchConfig;
+    notchConfig.type = BANDPASS;
+    notchConfig.fCut = 1500; //tweeter resonant frequency
+    notchConfig.dbGain = -12;
+    notchConfig.q = 1 / (sqrt(2)); 
+    m_notchCorrection = new IIRFilter(notchConfig, client.sampleRate());
+
+    m_bufferSize = m_processor->bufferSize();
+    for (int i =0; i < (sizeof(m_padBuffer) / sizeof(int64_t)) ; i++)
+    {
+        m_padBuffer[i] = 0;
+    }
 }
+
+int AlsaWorker::DriftCorrection()
+{
+    int32_t deltaK; //raw sample offset between ALSA and JACK
+    int32_t nJ; //number of samples elapsed since JACK started the current cycle
+    int32_t nA; //number of samples ALSA has written this cycle (16*4096 - samples_ready_to_write)
+    int rushTolerance = 0; //number of samples to let ALSA run ahead of JACK before we pull it back
+    int dragTolerance = 0; //number of samples to let ALSA lag behind JACK before we push it forward (pad)
+    jack_client_t* rawClient; //handle to the raw C API client 
+
+    rawClient = m_client->GetRawClient(); //JB: I have added this method to QtJack::Client to get the handle
+
+    nJ = round(jack_frames_since_cycle_start(rawClient));
+    nA = 16*m_bufferSize - m_dac->FramesReady();
+
+    std::cout << "ALSA frames written since cycle start: " << nA << std::endl;
+    std::cout << "frames since cycle start: " << nJ << std::endl;
+
+    deltaK =  m_bufferSize - (nA + nJ); //scale up to 32-bit by multiplying number of frames by 4
+    std::cout << "Sample offset: " << deltaK << std::endl;
+
+    if (deltaK < rushTolerance)
+    {
+        /* ALSA is running ahead so force a rewind */
+        m_dac->Rewind(-1*deltaK);
+    }
+    if(deltaK > dragTolerance)
+    {
+        /* ALSA is lagging behind so pad a temporary buffer and write */
+        while (deltaK > 0) 
+        {
+	        uint64_t to_write = (deltaK > 512) ? 512 : deltaK;
+            m_dac->WriteInterleaved(m_padBuffer, static_cast<int>(to_write));
+	        deltaK -= to_write;
+	    }
+    }
+
+
+
+
+
+
+    //std::cout << "Buffer size: " << m_bufferSize << std::endl;
+} 
 
 void AlsaWorker::Work()
 {
@@ -99,6 +131,7 @@ void AlsaWorker::Work()
     int64_t rightSample32 = 0;
     double inputSample, bassSample, midSample, trebleSample, leftSample, rightSample;
     int posPacket = 0;
+    int newBuffSize;
 
     int samplesPerPacket = MTU / (m_processor->bitDepth() / 8);
     if (samplesPerPacket > 256) { samplesPerPacket = 256; } else { samplesPerPacket = 512; }
@@ -120,7 +153,12 @@ void AlsaWorker::Work()
         {
             cout << "ALSA WORKER: thread sync error" << endl;
         }
+
+        /* determine the required output buffer size to syncronise 
+           ALSA with the JACK server */
+        newBuffSize = DriftCorrection();
         
+        //pos = 0; pos < resizedBufferLen: pos++
         for (int pos = 0; pos < m_processor->bufferSize(); pos++)
         {
             /* copy from ring buffer into local ALSA buffer */
@@ -159,6 +197,9 @@ void AlsaWorker::Work()
 
             //leftSample = 0; //woofer
             //rightSample = 0; //tweeter
+
+            /* apply correction filters */
+            //rightSample = m_notchCorrection->filter(rightSample);
 
             leftSample32 = static_cast<int64_t>(leftSample*0x10000000);
             leftSample32 = leftSample32 & 0x00000000FFFFFFFF;
@@ -206,7 +247,7 @@ void AlsaWorker::Work()
 
         /* output through alsa */
         
-        if ( !m_dac->WriteInterleaved(m_alsaBuffer) )
+        if ( !m_dac->WriteInterleaved(m_alsaBuffer, m_bufferSize) )
         {
             cout << "ALSA WORKER: failed to write to device" << endl;
             exit(1);
@@ -215,7 +256,7 @@ void AlsaWorker::Work()
         /* route filter outputs to test points */
 
         //cout << "ALSA WORKER: input sample " << inputSample << endl;
-        //cout << "ALSA WORKER: output sample "<< currentSample << endl;
+        //cout << "ALSA WORKER: output sample "<< inputSample << endl;
         
         m_mutex.unlock();
         qApp->processEvents();
@@ -231,17 +272,18 @@ void AlsaWorker::Attenuate(float factor)
 
 void AlsaWorker::AdjustMid(filterConfig_t* params)
 {
-    m_midEQ->Update(*params);
+    //std::cout << "New Gain " << params->dbGain << std::endl;
+    m_midEQ->Update(params->dbGain);
 }
 
 void AlsaWorker::AdjustBass(filterConfig_t* params)
 {
-    m_bassEQ->Update(*params);
+    m_bassEQ->Update(params->dbGain);
 }
 
 void AlsaWorker::AdjustTreble(filterConfig_t* params)
 {
-    m_trebleEQ->Update(*params);
+    m_trebleEQ->Update(params->dbGain);
 }
 
 void AlsaWorker::EnableEq()

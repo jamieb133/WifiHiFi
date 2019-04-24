@@ -23,7 +23,9 @@ class AlsaController
 {
     public:
         AlsaController(QtJack::Client& client, const char* pcmDevice);
-        bool WriteInterleaved(int64_t* buffer);
+        bool WriteInterleaved(int64_t* buffer, int size);
+        uint32_t FramesReady();
+        bool Rewind(uint32_t samples);
 
     private:
         int RecoverXRuns(int status);
