@@ -62,5 +62,11 @@ namespace WifiHifi
         double b2;
     } IIRCoeffs_t;
 
+    typedef struct SwitchFlag {
+        bool volUp;
+        bool volDown;
+        bool power;
+    } SwitchFlag_t;
+
 };
 #endif //TYPES_H

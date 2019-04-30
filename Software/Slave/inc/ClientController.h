@@ -13,6 +13,7 @@
 #define CLIENTCONTROLLER_H
 
 #include "AlsaWorker.h"
+#include "HardwareController.h"
 
 #include <QObject>
 #include <QMutex>
@@ -25,7 +26,7 @@ class ClientController : public QObject
     Q_OBJECT
 
 public:
-    explicit ClientController(AlsaWorker* alsa);
+    explicit ClientController(HardwareController* hw, AlsaWorker* alsa);
 
 public slots:
     /**
@@ -88,6 +89,7 @@ private:
     void HardwareVolume(int vol);
 
     int* m_dbVols;
+    HardwareController *m_hw;
 
   
 };

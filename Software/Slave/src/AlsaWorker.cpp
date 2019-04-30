@@ -105,8 +105,8 @@ int AlsaWorker::DriftCorrection()
     nJ = round(jack_frames_since_cycle_start(rawClient));
     nA = 16*m_bufferSize - m_dac->FramesReady();
 
-    //std::cout << "ALSA frames written since cycle start: " << nA << std::endl;
-    //std::cout << "frames since cycle start: " << nJ << std::endl;
+    std::cout << "ALSA frames written since cycle start: " << nA << std::endl;
+    std::cout << "frames since cycle start: " << nJ << std::endl;
 
     offset =  m_bufferSize - (nA + nJ); //scale up to 32-bit by multiplying number of frames by 4
     int64_t deltaK = offset;
@@ -166,8 +166,8 @@ int AlsaWorker::DriftCorrection()
     /* PI controller */
     resizeFactor = 1.0 - ( K * ( deltaK_bar + (Ki*m_integDeltaK) ) );
     std::cout << "Sample offset: " << deltaK << std::endl;
-    std::cout << "smoothed offset: " << deltaK_bar << endl;
-    //std::cout << "Resize Factor: " << resizeFactor << endl;
+    //std::cout << "smoothed offset: " << deltaK_bar << endl;
+    //std::cout << "Resize Factor: " << re sizeFactor << endl;
 
     resizeFactor = floor( (resizeFactor - m_resampleMean) * quantiseFactor + 0.5 ) / quantiseFactor + m_resampleMean;
 
@@ -219,10 +219,10 @@ void AlsaWorker::Work()
         
         /* determine the required output buffer size to syncronise 
            ALSA with the JACK server */
-        newBuffSize = DriftCorrection();
+        //newBuffSize = DriftCorrection();
         std::cout << "NEW SIZE: " << newBuffSize << std::endl;
         
-        //newBuffSize = m_bufferSize; 
+        newBuffSize = m_bufferSize; 
 
 
 

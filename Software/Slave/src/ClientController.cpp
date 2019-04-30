@@ -17,9 +17,10 @@
 #define DISCOVERY_PORT 1233
 #define CONTROL_PORT 1234
 
-ClientController::ClientController(AlsaWorker* alsa)
+ClientController::ClientController(HardwareController* hw, AlsaWorker* alsa)
 {
     m_alsa = alsa;
+    m_hw = hw;
 
     /* setup udp socket */
     m_socket = new QUdpSocket(this);
